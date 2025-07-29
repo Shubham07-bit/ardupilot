@@ -1,0 +1,98 @@
+# AntennaTracker No-GPS Parameters
+# For systems without GPS - uses fixed start position
+
+# Communication & Target Configuration
+SYSID_TARGET,1
+MAV_UPDATE_RATE,5
+
+# Servo Configuration
+SERVO_PITCH_TYPE,0
+SERVO_YAW_TYPE,0
+SERVO1_FUNCTION,6
+SERVO2_FUNCTION,7
+
+# Servo Output Settings
+SERVO1_MIN,1000
+SERVO1_MAX,2000
+SERVO1_TRIM,1500
+SERVO2_MIN,1000
+SERVO2_MAX,2000
+SERVO2_TRIM,1500
+
+# Movement Limits
+YAW_RANGE,360
+PITCH_MIN,-90
+PITCH_MAX,90
+
+# Tracking Behavior
+DISTANCE_MIN,5
+ALT_SOURCE,2
+STARTUP_DELAY,0
+
+# Fixed Position Settings (REQUIRED - Set your actual coordinates)
+START_LATITUDE,-35.363261
+START_LONGITUDE,149.165230
+
+# PID Control - Yaw Axis
+YAW2SRV_P,1.0
+YAW2SRV_I,0.1
+YAW2SRV_D,0.02
+YAW2SRV_IMAX,100
+
+# PID Control - Pitch Axis
+PITCH2SRV_P,1.0
+PITCH2SRV_I,0.1
+PITCH2SRV_D,0.02
+PITCH2SRV_IMAX,100
+
+# Movement Speed Control
+YAW_SLEW_TIME,2
+PITCH_SLEW_TIME,2
+MIN_REVERSE_TIME,1
+
+# Trim Settings
+YAW_TRIM,0
+PITCH_TRIM,0
+
+# Disable GPS (since we don't have one)
+GPS_TYPE,0
+
+# === IMPORTANT: AntennaTracker Arming System ===
+# AntennaTracker does NOT have ARMING_CHECK or ARMING_REQUIRE parameters
+# It uses a simplified arming system based on flight modes:
+# - STOP and INITIALISING modes: servos disarmed
+# - AUTO, MANUAL, SCAN, GUIDED, SERVOTEST modes: servos auto-armed
+# - No GPS/compass prearm checks when sensors are disabled  
+# - To start tracking: switch to AUTO or MANUAL mode via MAVLink/GCS
+
+# AHRS Configuration for no-GPS
+AHRS_GPS_USE,0
+AHRS_EKF_TYPE,10
+
+# Compass Configuration (Disable if not needed or not calibrated)
+COMPASS_ENABLE,0
+COMPASS_USE,0
+COMPASS_USE2,0
+COMPASS_USE3,0
+
+# Hardware Safety Switch (Disable for SITL)
+BRD_SAFETYENABLE,0
+
+# Accelerometer Calibration (Skip 3D cal requirement)
+INS_ACCEL_FILTER,20
+INS_USE,1
+INS_USE2,1
+INS_USE3,0
+
+# Skip accelerometer calibration requirement
+AHRS_TRIM_X,0
+AHRS_TRIM_Y,0
+
+# Force home position (required for "waiting for home" issue)
+# These match your START coordinates above
+HOME_LAT,-353632610
+HOME_LON,1491652300
+HOME_ALT,584000
+
+# Logging
+LOG_BITMASK,127

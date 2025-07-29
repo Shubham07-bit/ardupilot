@@ -42,7 +42,6 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
 
     _bus.set_default(i2c_bus);
     _params._serial_number.set(AP_BATT_SERIAL_NUMBER_DEFAULT);
-    _params._pack_capacity.set(0);
 }
 
 void AP_BattMonitor_SMBus::init(void)
@@ -145,6 +144,33 @@ void AP_BattMonitor_SMBus::read_cycle_count()
         return;
     }
     _has_cycle_count = read_word(BATTMONITOR_SMBUS_CYCLE_COUNT, _cycle_count);
+}
+
+// modification for BQ34100
+bool AP_BattMonitor_SMBus::read_byte(uint8_t reg, uint8_t& data) const
+{
+    // buffer to hold results (1 extra byte returned holding PEC)
+    const uint8_t read_size = 2 + (_pec_supported ? 1 : 0);
+    uint8_t buff[read_size];    // buffer to hold results
+
+    // read the appropriate register from the device
+    if (!_dev->read_registers(reg, buff, sizeof(buff))) {
+        return false;
+    }
+
+    // check PEC
+    if (_pec_supported) {
+        const uint8_t pec = get_PEC(_address, reg, true, buff, 2);
+        if (pec != buff[2]) {
+            return false;
+        }
+    }
+
+    // convert buffer to word
+    data = buff[0];
+
+    // return success
+    return true;
 }
 
 // read word from register

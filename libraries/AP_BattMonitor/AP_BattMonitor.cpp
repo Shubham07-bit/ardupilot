@@ -28,6 +28,7 @@
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include "AP_BattMonitor_AD7091R5.h"
 #include "AP_BattMonitor_Scripting.h"
+#include "AP_BattMonitor_SMBus_BQ34100.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -578,6 +579,7 @@ AP_BattMonitor::init()
         state[instance].instance = instance;
 
         const auto allocation_type = configured_type(instance);
+        
         switch (allocation_type) {
 #if AP_BATTERY_ANALOG_ENABLED
             case Type::ANALOG_VOLTAGE_ONLY:
@@ -699,6 +701,7 @@ AP_BattMonitor::init()
 #endif// AP_BATTERY_AD7091R5_ENABLED
 #if AP_BATTERY_SCRIPTING_ENABLED
             case Type::Scripting:
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Set to Scripting");
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_Scripting(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_SCRIPTING_ENABLED
@@ -843,9 +846,14 @@ void AP_BattMonitor::read()
 }
 
 // healthy - returns true if monitor is functioning
+// bool AP_BattMonitor::healthy(uint8_t instance) const {
+//     return instance < _num_instances && state[instance].healthy;
+// }
+
 bool AP_BattMonitor::healthy(uint8_t instance) const {
-    return instance < _num_instances && state[instance].healthy;
+    return (instance < _num_instances && state[instance].healthy);
 }
+
 
 /// voltage - returns battery voltage in volts
 float AP_BattMonitor::voltage(uint8_t instance) const

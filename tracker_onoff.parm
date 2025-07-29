@@ -1,0 +1,39 @@
+# AntennaTracker OnOff Servo Parameters
+# For systems using on/off servos instead of position servos
+
+# Communication & Target Configuration
+SYSID_TARGET,1
+MAV_UPDATE_RATE,5
+
+# OnOff Servo Configuration
+SERVO_PITCH_TYPE,1
+SERVO_YAW_TYPE,1
+SERVO1_FUNCTION,6
+SERVO2_FUNCTION,7
+
+# OnOff Servo Settings
+ONOFF_YAW_RATE,9.0
+ONOFF_PITCH_RATE,1.0
+ONOFF_YAW_MINT,0.1
+ONOFF_PITCH_MINT,0.1
+
+# Movement Limits
+YAW_RANGE,360
+PITCH_MIN,-90
+PITCH_MAX,90
+
+# Tracking Behavior
+DISTANCE_MIN,5
+ALT_SOURCE,2
+STARTUP_DELAY,0
+
+# Position Settings (Set if no GPS - uncomment and adjust coordinates)
+# START_LATITUDE,-35.363261
+# START_LONGITUDE,149.165230
+
+# Trim Settings
+YAW_TRIM,0
+PITCH_TRIM,0
+
+# Logging
+LOG_BITMASK,127

@@ -1,0 +1,79 @@
+# AntennaTracker Hardware Parameters
+# Parameters for physical hardware with real servos and GPS
+
+# Communication & Target Configuration
+SYSID_TARGET,1
+MAV_UPDATE_RATE,3
+
+# Servo Configuration
+SERVO_PITCH_TYPE,0
+SERVO_YAW_TYPE,0
+SERVO1_FUNCTION,6
+SERVO2_FUNCTION,7
+
+# Servo Output Settings (Adjust for your specific servos)
+SERVO1_MIN,1000
+SERVO1_MAX,2000
+SERVO1_TRIM,1500
+SERVO1_REVERSED,0
+SERVO2_MIN,1000
+SERVO2_MAX,2000
+SERVO2_TRIM,1500
+SERVO2_REVERSED,0
+
+# Movement Limits
+YAW_RANGE,360
+PITCH_MIN,-90
+PITCH_MAX,90
+
+# Tracking Behavior
+DISTANCE_MIN,10
+ALT_SOURCE,1
+STARTUP_DELAY,2
+
+# Position Settings (Set if no GPS - uncomment and adjust coordinates)
+# START_LATITUDE,-35.363261
+# START_LONGITUDE,149.165230
+
+# PID Control - Yaw Axis (Conservative for hardware)
+YAW2SRV_P,0.8
+YAW2SRV_I,0.05
+YAW2SRV_D,0.02
+YAW2SRV_IMAX,100
+
+# PID Control - Pitch Axis (Conservative for hardware)
+PITCH2SRV_P,0.8
+PITCH2SRV_I,0.05
+PITCH2SRV_D,0.02
+PITCH2SRV_IMAX,100
+
+# Movement Speed Control
+YAW_SLEW_TIME,3
+PITCH_SLEW_TIME,3
+MIN_REVERSE_TIME,1
+
+# Trim Settings
+YAW_TRIM,0
+PITCH_TRIM,0
+
+# GPS Configuration
+GPS_TYPE,1
+GPS_AUTO_CONFIG,1
+
+# Compass Configuration
+COMPASS_ENABLE,1
+COMPASS_AUTODEC,1
+
+# Barometer
+BARO_PROBE_EXT,0
+
+# AHRS Settings
+AHRS_ORIENTATION,0
+AHRS_GPS_GAIN,1.0
+
+# Logging
+LOG_BITMASK,127
+LOG_DISARMED,1
+
+# Safety
+BRD_SAFETYENABLE,1

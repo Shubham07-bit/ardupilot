@@ -1,0 +1,22 @@
+# AntennaTracker Minimal Parameters
+# Absolute minimum parameters needed for basic operation
+
+# Target Configuration
+SYSID_TARGET,1
+MAV_UPDATE_RATE,5
+
+# Servo Functions
+SERVO1_FUNCTION,6
+SERVO2_FUNCTION,7
+
+# Basic Tracking
+ALT_SOURCE,2
+DISTANCE_MIN,5
+
+# Position Settings (Set if no GPS - uncomment and adjust coordinates)
+# START_LATITUDE,-35.363261
+# START_LONGITUDE,149.165230
+
+# Basic PID
+YAW2SRV_P,1.0
+PITCH2SRV_P,1.0

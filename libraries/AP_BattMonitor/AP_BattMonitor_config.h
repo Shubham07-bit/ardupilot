@@ -75,6 +75,11 @@
 #define AP_BATTERY_INA3221_ENABLED (AP_BATTERY_BACKEND_DEFAULT_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
+#ifndef AP_BATTERY_INA3221_ENABLED
+// turned on in hwdefs (except for sim test), requires config
+#define AP_BATTERY_INA3221_ENABLED (AP_BATTERY_BACKEND_DEFAULT_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #ifndef AP_BATTERY_LTC2946_ENABLED
 #define AP_BATTERY_LTC2946_ENABLED (AP_BATTERY_BACKEND_DEFAULT_ENABLED && defined(HAL_BATTMON_LTC2946_BUS) && defined(HAL_BATTMON_LTC2946_ADDR))
 #endif
@@ -110,6 +115,11 @@
 
 #ifndef AP_BATTERY_SMBUS_SUI_ENABLED
 #define AP_BATTERY_SMBUS_SUI_ENABLED AP_BATTERY_SMBUS_ENABLED
+#endif
+
+// custom smart battery modification(using BMS Data), using SMBus as base class
+#ifndef AP_BATTERY_SMBUS_BQ34100_ENABLED
+#define AP_BATTERY_SMBUS_BQ34100_ENABLED 1
 #endif
 
 // subclasses of the SUMbus generic backend:

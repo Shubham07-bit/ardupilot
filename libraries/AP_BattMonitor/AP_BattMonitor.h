@@ -13,7 +13,7 @@
 
 // maximum number of battery monitors
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
-#define AP_BATT_MONITOR_MAX_INSTANCES       9
+#define AP_BATT_MONITOR_MAX_INSTANCES       10
 #endif
 
 // first monitor is always the primary monitor
@@ -49,6 +49,7 @@ class AP_BattMonitor_Torqeedo;
 class AP_BattMonitor_FuelLevel_Analog;
 class AP_BattMonitor_EFI;
 class AP_BattMonitor_Scripting;
+class AP_BattMonitor_SMBus_BQ34100;
 
 
 class AP_BattMonitor
@@ -77,6 +78,8 @@ class AP_BattMonitor
     friend class AP_BattMonitor_Synthetic_Current;
     friend class AP_BattMonitor_Scripting;
 
+    friend class AP_BattMonitor_SMBus_BQ34100;
+
 public:
 
     // battery failsafes must be defined in levels of severity so that vehicles wont fall backwards
@@ -91,12 +94,10 @@ public:
     using Type = AP_BattMonitor_Params::Type;
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
-
     AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities);
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_BattMonitor);
-
     static AP_BattMonitor *get_singleton() {
         return _singleton;
     }
@@ -131,13 +132,17 @@ public:
         bool        powerOffNotified;          // only send powering off notification once
         uint32_t    time_remaining;            // remaining battery time
         bool        has_time_remaining;        // time_remaining is only valid if this is true
+        uint8_t     state_of_charge_pct;       // added new variable
         uint8_t     state_of_health_pct;       // state of health (SOH) in percent
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
+        uint32_t    full_charge_capacity;      // added new variable
+        uint32_t    remaining_capacity;        // added new variable
         uint8_t     instance;                  // instance number of this backend
         Type        type;                      // allocated instance type
         const struct AP_Param::GroupInfo *var_info;
     };
 
+    bool use_direct_soc = false;
     static const struct AP_Param::GroupInfo *backend_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
 
     // Return the number of battery monitor instances

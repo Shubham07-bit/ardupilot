@@ -84,8 +84,11 @@ protected:
     // reads the battery's cycle count
     void read_cycle_count();
 
+    bool read_byte(uint8_t reg, uint8_t& data) const;
      // read word from register
      // returns true if read was successful, false if failed
+
+
     bool read_word(uint8_t reg, uint16_t& data) const;
 
     // read_block - returns number of characters read if successful, zero if unsuccessful
