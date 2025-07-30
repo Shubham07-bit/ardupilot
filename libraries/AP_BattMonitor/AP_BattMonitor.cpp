@@ -28,6 +28,7 @@
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include "AP_BattMonitor_AD7091R5.h"
 #include "AP_BattMonitor_Scripting.h"
+#include "AP_BattMonitor_SMBus_BQ34100.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -578,10 +579,12 @@ AP_BattMonitor::init()
         state[instance].instance = instance;
 
         const auto allocation_type = configured_type(instance);
+        
         switch (allocation_type) {
 #if AP_BATTERY_ANALOG_ENABLED
             case Type::ANALOG_VOLTAGE_ONLY:
             case Type::ANALOG_VOLTAGE_AND_CURRENT:
+            case Type::ANALOG_CURRENT_ONLY:
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
                 break;
 #endif
@@ -698,6 +701,7 @@ AP_BattMonitor::init()
 #endif// AP_BATTERY_AD7091R5_ENABLED
 #if AP_BATTERY_SCRIPTING_ENABLED
             case Type::Scripting:
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Set to Scripting");
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_Scripting(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_SCRIPTING_ENABLED
@@ -730,66 +734,7 @@ AP_BattMonitor::init()
             // there will be a gap, but as we always check for drivers[instances] being nullptr
             // this is safe
             _num_instances = instance + 1;
-
-            // Convert the old analog & Bus parameters to the new dynamic parameter groups
-            convert_dynamic_param_groups(instance);
         }
-    }
-}
-
-void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
-{
-    AP_Param::ConversionInfo info;
-    if (!AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
-        return;
-    }
-
-    char param_prefix[6] {};
-    char param_name[17] {};
-    info.new_name = param_name;
-
-    const uint8_t param_instance = instance + 1;
-    // first battmonitor does not have '1' in the param name
-    if(param_instance == 1) {
-        hal.util->snprintf(param_prefix, sizeof(param_prefix), "BATT");
-    } else {
-        hal.util->snprintf(param_prefix, sizeof(param_prefix), "BATT%X", param_instance);
-    }
-    param_prefix[sizeof(param_prefix)-1] = '\0';
-
-    hal.util->snprintf(param_name, sizeof(param_name), "%s_%s", param_prefix, "MONITOR");
-    param_name[sizeof(param_name)-1] = '\0';
-
-    // Find the index of the BATTn_MONITOR which is not moving to index the moving parameters off from
-    AP_Param::ParamToken token = AP_Param::ParamToken {};
-    ap_var_type type;
-    AP_Param* param = AP_Param::find_by_name(param_name, &type, &token);
-    const uint8_t battmonitor_index = 1;
-    if( param == nullptr) {
-        // BATTn_MONITOR not found
-        return;
-    }
-
-    const struct convert_table {
-        uint32_t old_group_element;
-        ap_var_type type;
-        const char* new_name;
-    }  conversion_table[] = {
-        // PARAMETER_CONVERSION - Added: Aug-2021
-            { 2,  AP_PARAM_INT8,  "VOLT_PIN"  },
-            { 3,  AP_PARAM_INT8,  "CURR_PIN"  },
-            { 4,  AP_PARAM_FLOAT, "VOLT_MULT" },
-            { 5,  AP_PARAM_FLOAT, "AMP_PERVLT"},
-            { 6,  AP_PARAM_FLOAT, "AMP_OFFSET"},
-            { 20, AP_PARAM_INT8,  "I2C_BUS"   },
-        };
-
-    for (const auto & elem : conversion_table) {
-        info.old_group_element = token.group_element + ((elem.old_group_element - battmonitor_index) * 64);
-        info.type = elem.type;
-
-        hal.util->snprintf(param_name, sizeof(param_name), "%s_%s", param_prefix, elem.new_name);
-        AP_Param::convert_old_parameter(&info, 1.0f, 0);
     }
 }
 
@@ -842,9 +787,14 @@ void AP_BattMonitor::read()
 }
 
 // healthy - returns true if monitor is functioning
+// bool AP_BattMonitor::healthy(uint8_t instance) const {
+//     return instance < _num_instances && state[instance].healthy;
+// }
+
 bool AP_BattMonitor::healthy(uint8_t instance) const {
-    return instance < _num_instances && state[instance].healthy;
+    return (instance < _num_instances && state[instance].healthy);
 }
+
 
 /// voltage - returns battery voltage in volts
 float AP_BattMonitor::voltage(uint8_t instance) const
@@ -1269,7 +1219,7 @@ void AP_BattMonitor::MPPT_set_powered_state_to_all(const bool power_on)
 // it will supply energy if available.
 void AP_BattMonitor::MPPT_set_powered_state(const uint8_t instance, const bool power_on)
 {
-    if (instance < _num_instances) {
+    if (instance < _num_instances && drivers[instance] != nullptr) {
         drivers[instance]->mppt_set_powered_state(power_on);
     }
 }
@@ -1301,6 +1251,9 @@ bool AP_BattMonitor::healthy() const
 bool AP_BattMonitor::handle_scripting(uint8_t idx, const BattMonitorScript_State &_state)
 {
     if (idx >= _num_instances) {
+        return false;
+    }
+    if (drivers[idx] == nullptr) {
         return false;
     }
     return drivers[idx]->handle_scripting(_state);

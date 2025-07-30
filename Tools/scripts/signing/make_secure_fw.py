@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 sign an ArduPilot APJ firmware with a private key
 '''
@@ -14,8 +17,8 @@ except ImportError:
     sys.exit(1)
 
 if monocypher.__version__ != "3.1.3.2":
-    Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
-    return None
+    print("Error: must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+    sys.exit(1)
     
 key_len = 32
 sig_len = 64

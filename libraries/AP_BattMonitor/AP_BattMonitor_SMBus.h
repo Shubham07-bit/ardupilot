@@ -84,8 +84,11 @@ protected:
     // reads the battery's cycle count
     void read_cycle_count();
 
+    bool read_byte(uint8_t reg, uint8_t& data) const;
      // read word from register
      // returns true if read was successful, false if failed
+
+
     bool read_word(uint8_t reg, uint16_t& data) const;
 
     // read_block - returns number of characters read if successful, zero if unsuccessful
@@ -95,7 +98,7 @@ protected:
     // buff is the data that was read or will be written
     uint8_t get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const;
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice *_dev;
     bool _pec_supported; // true if PEC is supported
 
     int32_t _serial_number = -1;    // battery serial number

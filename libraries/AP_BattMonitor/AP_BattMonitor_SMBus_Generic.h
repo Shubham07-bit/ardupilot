@@ -18,10 +18,11 @@ public:
     AP_BattMonitor_SMBus_Generic(AP_BattMonitor &mon,
                              AP_BattMonitor::BattMonitor_State &mon_state,
                              AP_BattMonitor_Params &params);
+    void timer(void) override;
 
 private:
 
-    void timer(void) override;
+    
 
     // check if PEC supported with the version value in SpecificationInfo() function
     // returns true once PEC is confirmed as working or not working

@@ -11,11 +11,14 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
 
+<<<<<<< HEAD
+=======
 // maximum number of battery monitors
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
-#define AP_BATT_MONITOR_MAX_INSTANCES       9
+#define AP_BATT_MONITOR_MAX_INSTANCES       10
 #endif
 
+>>>>>>> bc9e4dd09c (Add Indrones custom modifications and board configurations)
 // first monitor is always the primary monitor
 #define AP_BATT_PRIMARY_INSTANCE            0
 
@@ -26,7 +29,7 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
-#if BOARD_FLASH_SIZE > 1024
+#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #define AP_BATT_MONITOR_CELLS_MAX           14
 #else
 #define AP_BATT_MONITOR_CELLS_MAX           12
@@ -49,6 +52,7 @@ class AP_BattMonitor_Torqeedo;
 class AP_BattMonitor_FuelLevel_Analog;
 class AP_BattMonitor_EFI;
 class AP_BattMonitor_Scripting;
+class AP_BattMonitor_SMBus_BQ34100;
 
 
 class AP_BattMonitor
@@ -77,6 +81,8 @@ class AP_BattMonitor
     friend class AP_BattMonitor_Synthetic_Current;
     friend class AP_BattMonitor_Scripting;
 
+    friend class AP_BattMonitor_SMBus_BQ34100;
+
 public:
 
     // battery failsafes must be defined in levels of severity so that vehicles wont fall backwards
@@ -88,45 +94,13 @@ public:
     };
 
     // Battery monitor driver types
-    enum class Type {
-        NONE                           = 0,
-        ANALOG_VOLTAGE_ONLY            = 3,
-        ANALOG_VOLTAGE_AND_CURRENT     = 4,
-        SOLO                           = 5,
-        BEBOP                          = 6,
-        SMBus_Generic                  = 7,
-        UAVCAN_BatteryInfo             = 8,
-        BLHeliESC                      = 9,
-        Sum                            = 10,
-        FuelFlow                       = 11,
-        FuelLevel_PWM                  = 12,
-        SUI3                           = 13,
-        SUI6                           = 14,
-        NeoDesign                      = 15,
-        MAXELL                         = 16,
-        GENERATOR_ELEC                 = 17,
-        GENERATOR_FUEL                 = 18,
-        Rotoye                         = 19,
-        // 20 was MPPT_PacketDigital
-        INA2XX                         = 21,
-        LTC2946                        = 22,
-        Torqeedo                       = 23,
-        FuelLevel_Analog               = 24,
-        Analog_Volt_Synthetic_Current  = 25,
-        INA239_SPI                     = 26,
-        EFI                            = 27,
-        AD7091R5                       = 28,
-        Scripting                      = 29,
-        INA3221                        = 30,
-    };
+    using Type = AP_BattMonitor_Params::Type;
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
-
     AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities);
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_BattMonitor);
-
     static AP_BattMonitor *get_singleton() {
         return _singleton;
     }
@@ -161,20 +135,24 @@ public:
         bool        powerOffNotified;          // only send powering off notification once
         uint32_t    time_remaining;            // remaining battery time
         bool        has_time_remaining;        // time_remaining is only valid if this is true
+        uint8_t     state_of_charge_pct;       // added new variable
         uint8_t     state_of_health_pct;       // state of health (SOH) in percent
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
+        uint32_t    full_charge_capacity;      // added new variable
+        uint32_t    remaining_capacity;        // added new variable
         uint8_t     instance;                  // instance number of this backend
         Type        type;                      // allocated instance type
         const struct AP_Param::GroupInfo *var_info;
     };
 
+    bool use_direct_soc = false;
     static const struct AP_Param::GroupInfo *backend_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
 
     // Return the number of battery monitor instances
     uint8_t num_instances(void) const { return _num_instances; }
 
     // detect and initialise any available battery monitors
-    void init();
+    __INITFUNC__ void init();
 
     /// Read the battery voltage and current for all batteries.  Should be called at 10hz
     void read();
@@ -225,11 +203,11 @@ public:
     int8_t get_highest_failsafe_priority(void) const { return _highest_failsafe_priority; };
 
     /// configured_type - returns battery monitor type as configured in parameters
-    enum Type configured_type(uint8_t instance) const {
+    Type configured_type(uint8_t instance) const {
         return (Type)_params[instance]._type.get();
     }
     /// allocated_type - returns battery monitor type as allocated
-    enum Type allocated_type(uint8_t instance) const {
+    Type allocated_type(uint8_t instance) const {
         return state[instance].type;
     }
 
@@ -310,8 +288,6 @@ private:
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
     uint32_t    _log_battery_bit;
     uint8_t     _num_instances;                                     /// number of monitors
-
-    void convert_dynamic_param_groups(uint8_t instance);
 
     /// returns the failsafe state of the battery
     Failsafe check_failsafe(const uint8_t instance);

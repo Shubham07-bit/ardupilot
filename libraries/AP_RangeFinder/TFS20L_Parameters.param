@@ -1,0 +1,159 @@
+# TFS20L Rangefinder Parameter Configuration
+# 
+# This file contains parameter settings for integrating TFS20L rangefinder
+# sensors with ArduPilot. Copy and paste these parameters into your GCS
+# (Mission Planner, QGroundControl, etc.) or load as a parameter file.
+#
+# Adjust values as needed for your specific setup and requirements.
+
+# ========================================================================
+# Single TFS20L Sensor (Downward-facing for altitude)
+# ========================================================================
+
+# Basic TFS20L configuration
+RNGFND1_TYPE,45          # TFS20L sensor type
+RNGFND1_ADDR,16          # I2C address (0x10 = 16 decimal)
+RNGFND1_ORIENT,25        # ROTATION_PITCH_270 (pointing down)
+RNGFND1_MIN_CM,10        # Minimum range in cm
+RNGFND1_MAX_CM,1200      # Maximum range in cm (adjust based on sensor specs)
+RNGFND1_STOP_PIN,-1      # Not used for I2C sensors
+RNGFND1_SETTLE,0         # No settling time needed
+RNGFND1_RMETRIC,1        # Return last valid reading on timeout
+RNGFND1_PWRRNG,0         # No power saving
+RNGFND1_GNDCLEAR,10      # Ground clearance in cm
+
+# ========================================================================
+# Multiple TFS20L Sensors (Wall-following setup)
+# ========================================================================
+
+# Downward-facing sensor (altitude measurement)
+RNGFND1_TYPE,45          # TFS20L
+RNGFND1_ADDR,16          # I2C address 0x10
+RNGFND1_ORIENT,25        # ROTATION_PITCH_270 (down)
+RNGFND1_MIN_CM,10
+RNGFND1_MAX_CM,1200
+RNGFND1_STOP_PIN,-1
+RNGFND1_SETTLE,0
+RNGFND1_RMETRIC,1
+RNGFND1_PWRRNG,0
+RNGFND1_GNDCLEAR,10
+
+# Right-facing sensor (wall following)
+RNGFND2_TYPE,45          # TFS20L
+RNGFND2_ADDR,17          # I2C address 0x11 (different from sensor 1)
+RNGFND2_ORIENT,2         # ROTATION_YAW_90 (pointing right)
+RNGFND2_MIN_CM,10
+RNGFND2_MAX_CM,800       # Shorter range for wall detection
+RNGFND2_STOP_PIN,-1
+RNGFND2_SETTLE,0
+RNGFND2_RMETRIC,1
+RNGFND2_PWRRNG,0
+RNGFND2_GNDCLEAR,0       # Not used for lateral sensors
+
+# Left-facing sensor (optional, for corridor navigation)
+RNGFND3_TYPE,45          # TFS20L
+RNGFND3_ADDR,18          # I2C address 0x12
+RNGFND3_ORIENT,6         # ROTATION_YAW_270 (pointing left)
+RNGFND3_MIN_CM,10
+RNGFND3_MAX_CM,800
+RNGFND3_STOP_PIN,-1
+RNGFND3_SETTLE,0
+RNGFND3_RMETRIC,1
+RNGFND3_PWRRNG,0
+RNGFND3_GNDCLEAR,0
+
+# Forward-facing sensor (obstacle avoidance)
+RNGFND4_TYPE,45          # TFS20L
+RNGFND4_ADDR,19          # I2C address 0x13
+RNGFND4_ORIENT,0         # ROTATION_NONE (pointing forward)
+RNGFND4_MIN_CM,10
+RNGFND4_MAX_CM,1200
+RNGFND4_STOP_PIN,-1
+RNGFND4_SETTLE,0
+RNGFND4_RMETRIC,1
+RNGFND4_PWRRNG,0
+RNGFND4_GNDCLEAR,0
+
+# ========================================================================
+# Additional Flight Control Parameters for Rangefinder Usage
+# ========================================================================
+
+# Enable rangefinder for altitude estimation (if using downward sensor)
+RNGFND_LANDING,1         # Use rangefinder for landing detection
+EK2_RNG_USE_HGT,70       # Use rangefinder below 70m (EKF2)
+EK3_RNG_USE_HGT,70       # Use rangefinder below 70m (EKF3)
+
+# Terrain following (if using terrain data)
+TERRAIN_ENABLE,1         # Enable terrain following
+TERRAIN_SPACING,100      # Terrain grid spacing
+
+# Object avoidance (if using proximity/avoidance features)
+AVOID_ENABLE,7           # Enable avoidance (fence, proximity, beacon)
+AVOID_MARGIN,2.0         # Avoidance margin in meters
+AVOID_BEHAVE,0           # Avoidance behavior (slide)
+
+# ========================================================================
+# Lua Scripting Parameters (for wall-following scripts)
+# ========================================================================
+
+# Enable scripting
+SCR_ENABLE,1             # Enable Lua scripting
+SCR_VM_I_COUNT,100000    # Increase instruction count for complex scripts
+SCR_HEAP_SIZE,64000      # Increase heap size if needed
+
+# ========================================================================
+# I2C Configuration (Hardware-specific)
+# ========================================================================
+
+# These parameters may vary depending on your flight controller
+# Check your board's documentation for correct I2C settings
+
+# Example for Pixhawk/Cube series:
+# The I2C bus and address settings are handled automatically
+# Just ensure proper wiring to the I2C port
+
+# ========================================================================
+# Orientation Reference
+# ========================================================================
+#
+# Common orientation values for RNGFND_ORIENT:
+# 0  = ROTATION_NONE (Forward)
+# 1  = ROTATION_YAW_45 (Forward-Right)
+# 2  = ROTATION_YAW_90 (Right)
+# 3  = ROTATION_YAW_135 (Back-Right)
+# 4  = ROTATION_YAW_180 (Back)
+# 5  = ROTATION_YAW_225 (Back-Left)
+# 6  = ROTATION_YAW_270 (Left)
+# 7  = ROTATION_YAW_315 (Forward-Left)
+# 24 = ROTATION_PITCH_90 (Up)
+# 25 = ROTATION_PITCH_270 (Down)
+#
+# ========================================================================
+# I2C Address Reference
+# ========================================================================
+#
+# Default TFS20L address: 0x10 (16 decimal)
+# 
+# For multiple sensors, each must have a unique I2C address.
+# Some sensors allow address configuration via hardware jumpers
+# or software commands. Consult your sensor documentation.
+#
+# Common addresses for multiple sensors:
+# Sensor 1: 0x10 (16 decimal)
+# Sensor 2: 0x11 (17 decimal)  
+# Sensor 3: 0x12 (18 decimal)
+# Sensor 4: 0x13 (19 decimal)
+#
+# ========================================================================
+# Usage Instructions
+# ========================================================================
+#
+# 1. Choose the appropriate parameter set above based on your setup
+# 2. Copy the relevant parameters to your GCS parameter editor
+# 3. Modify I2C addresses if using multiple sensors
+# 4. Adjust min/max ranges based on your requirements
+# 5. Set orientations to match your sensor mounting
+# 6. Save parameters and reboot flight controller
+# 7. Test sensor functionality before flight
+#
+# ========================================================================

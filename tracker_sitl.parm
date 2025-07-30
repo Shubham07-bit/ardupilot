@@ -1,0 +1,59 @@
+# AntennaTracker SITL Parameters
+# Essential parameters for SITL simulation with vehicle tracking
+
+# Communication & Target Configuration
+SYSID_TARGET,1
+MAV_UPDATE_RATE,5
+
+# Servo Configuration
+SERVO_PITCH_TYPE,0
+SERVO_YAW_TYPE,0
+SERVO1_FUNCTION,6
+SERVO2_FUNCTION,7
+
+# Servo Output Settings
+SERVO1_MIN,1000
+SERVO1_MAX,2000
+SERVO1_TRIM,1500
+SERVO2_MIN,1000
+SERVO2_MAX,2000
+SERVO2_TRIM,1500
+
+# Movement Limits
+YAW_RANGE,360
+PITCH_MIN,-90
+PITCH_MAX,90
+
+# Tracking Behavior
+DISTANCE_MIN,5
+ALT_SOURCE,2
+STARTUP_DELAY,0
+
+# Position Settings (Set if no GPS - uncomment and adjust coordinates)
+# START_LATITUDE,-35.363261
+# START_LONGITUDE,149.165230
+
+# PID Control - Yaw Axis
+YAW2SRV_P,1.0
+YAW2SRV_I,0.1
+YAW2SRV_D,0.02
+YAW2SRV_IMAX,100
+
+# PID Control - Pitch Axis
+PITCH2SRV_P,1.0
+PITCH2SRV_I,0.1
+PITCH2SRV_D,0.02
+PITCH2SRV_IMAX,100
+
+# Movement Speed Control
+YAW_SLEW_TIME,2
+PITCH_SLEW_TIME,2
+MIN_REVERSE_TIME,1
+
+# Trim Settings
+YAW_TRIM,0
+PITCH_TRIM,0
+
+# Logging (Optional)
+LOG_BITMASK,127
+LOG_DISARMED,0
