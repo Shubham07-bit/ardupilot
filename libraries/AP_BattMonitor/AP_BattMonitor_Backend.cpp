@@ -26,6 +26,29 @@
 #include "AP_ESC_Telem/AP_ESC_Telem.h"
 #endif
 
+#define BMS_BQ34100 33
+
+/*
+  All backends use the same parameter table and set of indices. Therefore, two
+  backends must not use the same index. The list of used indices and
+  corresponding backends is below.
+
+    1-6:    AP_BattMonitor_Analog.cpp
+    10-11:  AP_BattMonitor_SMBus.cpp
+    20:     AP_BattMonitor_Sum.cpp
+    22-24:  AP_BattMonitor_INA3221.cpp
+    25-26:  AP_BattMonitor_INA2xx.cpp
+    27-28:  AP_BattMonitor_INA2xx.cpp, AP_BattMonitor_INA239.cpp (legacy duplication)
+    30:     AP_BattMonitor_DroneCAN.cpp
+    36:     AP_BattMonitor_ESC.cpp
+    40-43:  AP_BattMonitor_FuelLevel_Analog.cpp
+    45-48:  AP_BattMonitor_FuelLevel_Analog.cpp
+    50-51:  AP_BattMonitor_Synthetic_Current.cpp
+    56-61:  AP_BattMonitor_AD7091R5.cpp
+
+  Usage does not need to be contiguous. The maximum possible index is 63.
+*/
+
 /*
   All backends use the same parameter table and set of indices. Therefore, two
   backends must not use the same index. The list of used indices and
@@ -61,23 +84,47 @@ AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonit
 
 // capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
 // return false if the battery is unhealthy, does not have current monitoring, or the pack_capacity is too small
+// bool AP_BattMonitor_Backend::capacity_remaining_pct(uint8_t &percentage) const
+// {
+//     // we consider anything under 10 mAh as being an invalid capacity and so will be our measurement of remaining capacity
+//     if ( _params._pack_capacity <= 10) {
+//         return false;
+//     }
+
+//     // the monitor must have current readings in order to estimate consumed_mah and be healthy
+//     if (!has_current() || !_state.healthy) {
+//         return false;
+//     }
+//     if (isnan(_state.consumed_mah) || _params._pack_capacity <= 0) {
+//         return false;
+//     }
+
+//     const float mah_remaining = _params._pack_capacity - _state.consumed_mah;
+//     percentage = constrain_float(100 * mah_remaining / _params._pack_capacity, 0, UINT8_MAX);
+//     return true;
+// }
+
 bool AP_BattMonitor_Backend::capacity_remaining_pct(uint8_t &percentage) const
 {
-    // we consider anything under 10 mAh as being an invalid capacity and so will be our measurement of remaining capacity
-    if ( _params._pack_capacity <= 10) {
-        return false;
+    if (!_state.healthy) {
+        return false;  // Don't report if battery data is not reliable
     }
 
-    // the monitor must have current readings in order to estimate consumed_mah and be healthy
-    if (!has_current() || !_state.healthy) {
-        return false;
+    // Use SOC directly if available (BQ34100 or similar BMS)
+    if (_params._type == BMS_BQ34100) {
+        percentage = constrain_float(_state.state_of_charge_pct, 0, 100);
+        return true;
     }
-    if (isnan(_state.consumed_mah) || _params._pack_capacity <= 0) {
-        return false;
-    }
+    else{
 
-    const float mah_remaining = _params._pack_capacity - _state.consumed_mah;
-    percentage = constrain_float(100 * mah_remaining / _params._pack_capacity, 0, UINT8_MAX);
+        // Fallback to estimated SOC for monitors without direct SOC
+        if (!has_current() || isnan(_state.consumed_mah) || _params._pack_capacity <= 0) {
+            return false;
+        }
+
+        const float mah_remaining = _params._pack_capacity - _state.consumed_mah;
+        percentage = constrain_float(100 * mah_remaining / _params._pack_capacity, 0, UINT8_MAX);
+    }
     return true;
 }
 
@@ -337,14 +384,26 @@ bool AP_BattMonitor_Backend::get_temperature(float &temperature) const
 */
 bool AP_BattMonitor_Backend::reset_remaining(float percentage)
 {
-    percentage = constrain_float(percentage, 0, 100);
-    const float used_proportion = (100.0f - percentage) * 0.01f;
-    _state.consumed_mah = used_proportion * _params._pack_capacity;
-    // without knowing the history we can't do consumed_wh
-    // accurately. Best estimate is based on current voltage. This
-    // will be good when resetting the battery to a value close to
-    // full charge
-    _state.consumed_wh = _state.consumed_mah * 0.001f * _state.voltage;
+
+    // if using BMS_BQ34100
+    if(_params._type == BMS_BQ34100){
+        // Directly use BMS data for remaining charge
+        _state.consumed_mah = _state.full_charge_capacity - _state.remaining_capacity;
+
+        // Estimate consumed energy in Wh
+        _state.consumed_wh = _state.consumed_mah * 0.001f * _state.voltage;
+
+    }
+    else{
+        percentage = constrain_float(percentage, 0, 100);
+        const float used_proportion = (100.0f - percentage) * 0.01f;
+        _state.consumed_mah = used_proportion * _params._pack_capacity;
+        // without knowing the history we can't do coused_proportionnsumed_wh
+        // accurately. Best estimate is based on current voltage. This
+        // will be good when resetting the battery to a value close to
+        // full charge
+        _state.consumed_wh = _state.consumed_mah * 0.001f * _state.voltage;
+    }
 
     // reset failsafe state for this backend
     _state.failsafe = update_failsafes();
@@ -356,12 +415,16 @@ bool AP_BattMonitor_Backend::reset_remaining(float percentage)
   update consumed mAh and Wh
  */
 void AP_BattMonitor_Backend::update_consumed(AP_BattMonitor::BattMonitor_State &state, uint32_t dt_us)
-{
-    // update total current drawn since startup
-    if (state.last_time_micros != 0 && dt_us < 2000000) {
-        const float mah = calculate_mah(state.current_amps, dt_us);
-        state.consumed_mah += mah;
-        state.consumed_wh  += 0.001 * mah * state.voltage;
+{   
+    if(_params._type == BMS_BQ34100){
+        state.consumed_mah = state.full_charge_capacity - state.remaining_capacity;
+    }else{
+        // update total current drawn since startup
+        if (state.last_time_micros != 0 && dt_us < 2000000) {
+            const float mah = calculate_mah(state.current_amps, dt_us);
+            state.consumed_mah += mah;
+            state.consumed_wh  += 0.001 * mah * state.voltage;
+        }
     }
 }
 
