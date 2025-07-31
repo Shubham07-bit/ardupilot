@@ -174,6 +174,15 @@ int main(void)
         try_boot = false;
         led_set(LED_BAD_FW);
     }
+    peripheral_power_enable();
+    if (sdcard_init()) {
+        if (ok != check_fw_result_t::CHECK_FW_OK) {
+            sdcard_append_counted_message("/bootlog.txt", "BAD FIRMWARE: CRC or signature check failed");
+        } else {
+            sdcard_append_counted_message("/bootlog.txt", "GOOD FIRMWARE: CRC and signature OK");
+        }
+        sdcard_stop();
+    }
 #endif
 
 #if defined(HAL_GPIO_PIN_VBUS) && defined(HAL_ENABLE_VBUS_CHECK)
@@ -243,15 +252,7 @@ int main(void)
         jump_to_app();
     }
 #endif
-    peripheral_power_enable();
-    if (sdcard_init()) {
-        if (ok != check_fw_result_t::CHECK_FW_OK) {
-            sdcard_append_counted_message("/bootlog.txt", "BAD FIRMWARE: CRC or signature check failed");
-        } else {
-            sdcard_append_counted_message("/bootlog.txt", "GOOD FIRMWARE: CRC and signature OK");
-        }
-        sdcard_stop();
-    }
+    
 }
 
 
