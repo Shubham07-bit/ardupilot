@@ -17,6 +17,8 @@
 
 #include <stdbool.h>
 
+
 bool sdcard_init();
 void sdcard_stop();
 bool sdcard_retry();
+int sdcard_append_counted_message(const char *filename, const char *content);

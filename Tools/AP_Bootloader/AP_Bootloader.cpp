@@ -39,6 +39,8 @@
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include "network.h"
 
+#include <AP_HAL_ChibiOS/sdcard.h>
+
 extern "C" {
     int main(void);
 }
@@ -133,6 +135,7 @@ int main(void)
         timeout = 0;
         try_boot = false;
         led_set(LED_BAD_FW);
+        // log to SD card
     }
 #if AP_BOOTLOADER_NETWORK_ENABLED
     if (ok == check_fw_result_t::CHECK_FW_OK) {
@@ -240,6 +243,15 @@ int main(void)
         jump_to_app();
     }
 #endif
+    peripheral_power_enable();
+    if (sdcard_init()) {
+        if (ok != check_fw_result_t::CHECK_FW_OK) {
+            sdcard_append_counted_message("/bootlog.txt", "BAD FIRMWARE: CRC or signature check failed");
+        } else {
+            sdcard_append_counted_message("/bootlog.txt", "GOOD FIRMWARE: CRC and signature OK");
+        }
+        sdcard_stop();
+    }
 }
 
 

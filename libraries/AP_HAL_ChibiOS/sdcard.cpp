@@ -1,3 +1,4 @@
+
 /*
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -47,6 +48,39 @@ static SPIConfig lowspeed;
 static SPIConfig highspeed;
 #endif
 
+
+// Append content to a file, prefixing with a count (line number). Returns new count or -1 on failure
+int sdcard_append_counted_message(const char *filename, const char *content)
+{
+#if HAL_USE_FATFS
+    FIL fh;
+    UINT bw = 0;
+    int count = 1;
+    // Try to open file for reading to count lines
+    if (f_open(&fh, filename, FA_READ) == FR_OK) {
+        char buf[128];
+        UINT br;
+        while (f_read(&fh, buf, sizeof(buf), &br) == FR_OK && br > 0) {
+            for (UINT i = 0; i < br; i++) {
+                if (buf[i] == '\n') count++;
+            }
+        }
+        f_close(&fh);
+    }
+    // Open for append
+    if (f_open(&fh, filename, FA_WRITE | FA_OPEN_ALWAYS) == FR_OK) {
+        f_lseek(&fh, f_size(&fh));
+        char line[256];
+        int n = snprintf(line, sizeof(line), "%d: %s\n", count, content);
+        if (f_write(&fh, line, n, &bw) == FR_OK) {
+            f_close(&fh);
+            return count;
+        }
+        f_close(&fh);
+    }
+#endif
+    return -1;
+}
 /*
   initialise microSD card if avaialble. This is called during
   AP_BoardConfig initialisation. The parameter BRD_SD_SLOWDOWN
@@ -100,6 +134,8 @@ bool sdcard_init()
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
 
         sdcard_running = true;
+        // Write a test file after successful mount
+        // sdcard_append_counted_message("/writetest.txt", "write test started successfully!");
         return true;
     }
 #elif HAL_USE_MMC_SPI
@@ -147,6 +183,8 @@ bool sdcard_init()
             continue;
         }
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
+        // Write a test file after successful mount
+        sdcard_append_counted_message("/writetest.txt", "Bootloader started successfully!");
         return true;
     }
 #endif

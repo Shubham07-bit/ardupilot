@@ -55,6 +55,7 @@
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 
+#include <AP_HAL_ChibiOS/sdcard.h>
 // #pragma GCC optimize("O0")
 
 
@@ -254,7 +255,12 @@ jump_to_app()
     if (ok != check_fw_result_t::CHECK_FW_OK) {
         // bad firmware, don't try and boot
         led_set(LED_BAD_FW);
+        sdcard_append_counted_message("/bootlog.txt", "bad firmware CRC");
         return;
+    }
+    if (ok == check_fw_result_t::CHECK_FW_OK) {
+        // log to SD card
+        sdcard_append_counted_message("/bootlog.txt", "good firmware CRC");
     }
 #endif
     
