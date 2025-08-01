@@ -68,7 +68,7 @@ ENABLE_DFU_BOOT 1
 include sdcard.inc
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
-define AP_OPENDRONEID_ENABLED 1
+# define AP_OPENDRONEID_ENABLED 1
 
 # FATFS support:
 define CH_CFG_USE_MEMCORE 1

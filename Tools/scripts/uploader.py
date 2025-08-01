@@ -241,6 +241,8 @@ class uploader(object):
     INFO_BOARD_REV  = b'\x03'        # board revision
     INFO_FLASH_SIZE = b'\x04'        # max firmware size in bytes
     INFO_EXTF_SIZE  = b'\x06'        # available external flash size
+    INFO_BL_STATUS  = b'\x07'        # bootloader status (firmware check result)
+    INFO_BL_STATUS_STR = b'\x08'     # bootloader status string
 
     PROG_MULTI_MAX  = 252            # protocol max is 255, must be multiple of 4
     READ_MULTI_MAX  = 252            # protocol max is 255
@@ -397,6 +399,19 @@ class uploader(object):
     def __getInfo(self, param):
         self.__send(uploader.GET_DEVICE + param + uploader.EOC)
         value = self.__recv_int()
+        self.__getSync()
+        return value
+
+    # send the GET_DEVICE command and wait for a string parameter
+    def __getInfoString(self, param):
+        self.__send(uploader.GET_DEVICE + param + uploader.EOC)
+        length = self.__recv_int()
+        if length > 0:
+            value = self.__recv(length)
+            if runningPython3:
+                value = value.decode('utf-8', errors='replace')
+        else:
+            value = ""
         self.__getSync()
         return value
 
@@ -733,6 +748,15 @@ class uploader(object):
         self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
         self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
         self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
+        
+        # get bootloader status information
+        try:
+            self.bootloader_status = self.__getInfo(uploader.INFO_BL_STATUS)
+            self.bootloader_status_str = self.__getInfoString(uploader.INFO_BL_STATUS_STR)
+        except Exception:
+            # older bootloader may not support these commands
+            self.bootloader_status = None
+            self.bootloader_status_str = "Status unavailable (old bootloader)"
 
     def dump_board_info(self):
         # OTP added in v4:
@@ -835,6 +859,31 @@ class uploader(object):
         else:
             print("  board_type: %u" % self.board_type)
         print("  board_rev: %u" % self.board_rev)
+        
+        # Print detailed bootloader status information
+        print("Bootloader Status:")
+        print("  protocol version: %u" % self.bl_rev)
+        if self.bootloader_status is not None:
+            print("  firmware check status: %d" % self.bootloader_status)
+            status_meaning = {
+                0: "CHECK_FW_OK - Firmware is valid",
+                1: "FAIL_REASON_NO_APP_SIG - No application signature found",
+                2: "FAIL_REASON_BAD_LENGTH_APP - Bad application length", 
+                3: "FAIL_REASON_BAD_BOARD_ID - Board ID mismatch",
+                4: "FAIL_REASON_BAD_LENGTH_DESCRIPTOR - Bad descriptor length",
+                5: "FAIL_REASON_BAD_CRC - CRC check failed",
+                6: "FAIL_REASON_BAD_FIRMWARE_SIGNATURE - Bad firmware signature",
+                7: "FAIL_REASON_VERIFICATION - Signature verification failed"
+            }
+            if self.bootloader_status in status_meaning:
+                print("  status meaning: %s" % status_meaning[self.bootloader_status])
+            else:
+                print("  status meaning: Unknown status code")
+        else:
+            print("  firmware check status: unavailable")
+        
+        if self.bootloader_status_str:
+            print("  status description: %s" % self.bootloader_status_str)
 
         print("Identification complete")
 

@@ -11,6 +11,8 @@ struct boardinfo {
     uint32_t	board_rev;
     uint32_t	fw_size;
     uint32_t    extf_size;
+    int32_t bootloader_status; // 0 = OK, else error code from check_good_firmware
+    char bootloader_status_str[96]; // Human-readable status string
 } __attribute__((packed));
 
 extern struct boardinfo board_info;

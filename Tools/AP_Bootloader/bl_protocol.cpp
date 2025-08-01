@@ -129,6 +129,8 @@
 #define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
 #define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
 #define PROTO_DEVICE_EXTF_SIZE  6   // size of available external flash
+#define PROTO_DEVICE_BL_STATUS  7   // bootloader status (firmware check result)
+#define PROTO_DEVICE_BL_STATUS_STR 8 // bootloader status string
 // all except PROTO_DEVICE_VEC_AREA and PROTO_DEVICE_BOARD_REV should be done
 #define CHECK_GET_DEVICE_FINISHED(x)   ((x & (0xB)) == 0xB)
 
@@ -608,6 +610,17 @@ bootloader(unsigned timeout)
             case PROTO_DEVICE_EXTF_SIZE:
                 cout((uint8_t *)&board_info.extf_size, sizeof(board_info.extf_size));
                 break;
+
+            case PROTO_DEVICE_BL_STATUS:
+                cout((uint8_t *)&board_info.bootloader_status, sizeof(board_info.bootloader_status));
+                break;
+
+            case PROTO_DEVICE_BL_STATUS_STR: {
+                uint32_t str_len = strlen(board_info.bootloader_status_str);
+                cout((uint8_t *)&str_len, sizeof(str_len));
+                cout((uint8_t *)board_info.bootloader_status_str, str_len);
+                break;
+            }
 
             default:
                 goto cmd_bad;

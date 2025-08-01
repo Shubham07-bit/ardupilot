@@ -137,12 +137,58 @@ int main(void)
     }
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
+    board_info.bootloader_status = (int32_t)ok;
+    switch (ok) {
+        case check_fw_result_t::CHECK_FW_OK:
+            strncpy(board_info.bootloader_status_str, "GOOD FIRMWARE: CRC and signature OK", sizeof(board_info.bootloader_status_str));
+            break;
+        case check_fw_result_t::FAIL_REASON_NO_APP_SIG:
+            strncpy(board_info.bootloader_status_str, "BAD FIRMWARE: No application signature", sizeof(board_info.bootloader_status_str));
+            break;
+        case check_fw_result_t::FAIL_REASON_BAD_LENGTH_APP:
+            strncpy(board_info.bootloader_status_str, "BAD FIRMWARE: Bad application length", sizeof(board_info.bootloader_status_str));
+            break;
+        case check_fw_result_t::FAIL_REASON_BAD_BOARD_ID:
+            strncpy(board_info.bootloader_status_str, "BAD FIRMWARE: Board ID mismatch", sizeof(board_info.bootloader_status_str));
+            break;
+        case check_fw_result_t::FAIL_REASON_BAD_LENGTH_DESCRIPTOR:
+            strncpy(board_info.bootloader_status_str, "BAD FIRMWARE: Bad descriptor length", sizeof(board_info.bootloader_status_str));
+            break;
+        case check_fw_result_t::FAIL_REASON_BAD_CRC:
+            strncpy(board_info.bootloader_status_str, "BAD FIRMWARE: CRC check failed", sizeof(board_info.bootloader_status_str));
+            break;
+        case check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE:
+            strncpy(board_info.bootloader_status_str, "BAD FIRMWARE: Bad firmware signature", sizeof(board_info.bootloader_status_str));
+            break;
+        case check_fw_result_t::FAIL_REASON_VERIFICATION:
+            strncpy(board_info.bootloader_status_str, "BAD FIRMWARE: Signature verification failed", sizeof(board_info.bootloader_status_str));
+            break;
+        default:
+            snprintf(board_info.bootloader_status_str, sizeof(board_info.bootloader_status_str), "BAD FIRMWARE: Unknown error code %d", (int)ok);
+            break;
+    }
     if (ok != check_fw_result_t::CHECK_FW_OK) {
         // bad firmware CRC, don't try and boot
         timeout = 0;
         try_boot = false;
         led_set(LED_BAD_FW);
-        // log to SD card
+    }
+    peripheral_power_enable();
+    // Give SD card time to power up and try multiple times
+    chThdSleep(chTimeMS2I(100));
+    
+    // Try SD card logging with retries
+    bool sd_logged = false;
+    for (int retry = 0; retry < 3 && !sd_logged; retry++) {
+        if (sdcard_init()) {
+            if (sdcard_append_counted_message("/bootlog.txt", board_info.bootloader_status_str) == 0) {
+                sd_logged = true;
+            }
+            sdcard_stop();
+        }
+        if (!sd_logged) {
+            chThdSleep(chTimeMS2I(50));
+        }
     }
 #if AP_BOOTLOADER_NETWORK_ENABLED
     if (ok == check_fw_result_t::CHECK_FW_OK) {
@@ -212,10 +258,21 @@ int main(void)
         led_set(LED_BAD_FW);
     }
     peripheral_power_enable();
-    if (sdcard_init()) {
-        // Write the same status string to the SD card
-        sdcard_append_counted_message("/bootlog.txt", board_info.bootloader_status_str);
-        sdcard_stop();
+    // Give SD card time to power up and try multiple times
+    chThdSleep(chTimeMS2I(100));
+    
+    // Try SD card logging with retries
+    bool sd_logged = false;
+    for (int retry = 0; retry < 3 && !sd_logged; retry++) {
+        if (sdcard_init()) {
+            if (sdcard_append_counted_message("/bootlog.txt", board_info.bootloader_status_str) == 0) {
+                sd_logged = true;
+            }
+            sdcard_stop();
+        }
+        if (!sd_logged) {
+            chThdSleep(chTimeMS2I(50));
+        }
     }
 #endif
 
