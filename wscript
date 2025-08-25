@@ -419,9 +419,9 @@ configuration in order to save typing.
         help='force consistent build outputs for things like __LINE__')
 
     g.add_option('--extra-hwdef',
-	    action='store',
-	    default=None,
-	    help='Extra hwdef.dat file for custom build.')
+        action='store',
+        default=None,
+        help='Extra hwdef.dat file for custom build.')
 
     g.add_option('--assert-cc-version',
                  default=None,
@@ -448,13 +448,13 @@ configuration in order to save typing.
         help='enables checking of new to ensure NEW_NOTHROW is used')
 
     # support enabling any option in build_options.py
-    for opt in build_options.BUILD_OPTIONS:
-        enable_option = "--" + opt.config_option()
+    for opt_item in build_options.BUILD_OPTIONS:
+        enable_option = "--" + opt_item.config_option()
         disable_option = enable_option.replace("--enable", "--disable")
-        enable_description = opt.description
+        enable_description = opt_item.description
         if not enable_description.lower().startswith("enable"):
             enable_description = "Enable " + enable_description
-        disable_description = "Disable " + enable_description[len("Enable "):]
+        disable_description = "Disable " + enable_description[len("Enable ") :]
         g.add_option(enable_option,
                      action='store_true',
                      default=False,
@@ -463,6 +463,12 @@ configuration in order to save typing.
                      action='store_true',
                      default=False,
                      help=disable_description)
+
+    # Add append-checksum build option
+    g.add_option('--append-checksum',
+                 action='store_true',
+                 default=False,
+                 help='Append SHA-256 checksum to .apj firmware after build')
     
     
 def _collect_autoconfig_files(cfg):
@@ -484,7 +490,7 @@ def _collect_autoconfig_files(cfg):
                 cfg.files.append(p)
 
 def configure(cfg):
-	# we need to enable debug mode when building for gconv, and force it to sitl
+    # we need to enable debug mode when building for gconv, and force it to sitl
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
 
@@ -951,6 +957,30 @@ def build(bld):
         import vscode_helper
         vscode_helper.update_settings(bld)
 
+    # Register signing and checksum as a post-build function (AFTER all build steps)
+    def sign_and_append_checksum(bld):
+        apj_path = os.path.join('build', bld.env.BOARD, 'bin', 'arducopter.apj')
+        # 1. Sign firmware if requested
+        if hasattr(bld.options, 'signed_fw') and bld.options.signed_fw:
+            key_file = getattr(bld.options, 'private_key', None)
+            if not key_file:
+                print('⚠️  --signed-fw requires --private-key=<keyfile>')
+                return
+            if os.path.exists(apj_path):
+                print(f'Signing firmware {apj_path}...')
+                subprocess.run(['python3', 'Tools/scripts/signing/make_secure_fw.py', apj_path, key_file], check=True)
+            else:
+                print(f'⚠️  {apj_path} not found, skipping signing.')
+        # 2. Append checksum if requested (always after signing)
+        if hasattr(bld.options, 'append_checksum') and bld.options.append_checksum:
+            if os.path.exists(apj_path):
+                print(f'Appending checksum to {apj_path}...')
+                subprocess.run(['python3', 'Tools/scripts/signing/append_checksum.py', apj_path, apj_path], check=True)
+            else:
+                print(f'⚠️  {apj_path} not found, skipping checksum append.')
+    bld.add_post_fun(sign_and_append_checksum)
+
+# === Restored build commands and install/rsync contexts ===
 ardupilotwaf.build_command('check',
     program_group_list='all',
     doc='builds all programs and run tests',

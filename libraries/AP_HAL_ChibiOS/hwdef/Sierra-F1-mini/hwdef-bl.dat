@@ -1,0 +1,58 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Sierra-F1 autopilot
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID 1087
+
+# USB setup
+USB_STRING_MANUFACTURER "Sierra Aerospace"
+USB_STRING_PRODUCT "Sierra-F1-BL"
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# LEDs
+PE0 LED_BOOTLOADER OUTPUT
+define HAL_LED_ON 0
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# define STM32_SERIAL_USE_USART2 TRUE
+define HAL_USE_SERIAL FALSE
+
+#define BOOTLOADER_DEBUG SD2
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
+
+# disable peripheral and sensor power in the bootloader
+PC8 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+# CS pins
+PC4 IMU1_CS CS
+PC1 IMU2_CS CS
+PD4 IMU3_CS CS
+PC15 BARO1_CS CS
+PE3 BARO2_CS CS
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN

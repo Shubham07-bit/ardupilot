@@ -71,6 +71,62 @@ allows for build and upload in one step for faster development:
  ./waf copter --upload
 ```
 
+
+## Automated Build, Signing, and Checksum Flow (Recommended)
+
+The ArduPilot build system now supports fully automated signing and checksum appending for firmware builds. You can control these features using configuration-time and build-time flags:
+
+### Configuration-Time Flags (set during `./waf configure`)
+
+- `--signed-fw` : Enable firmware signing support.
+- `--private-key=NAME_private_key.dat` : Path to your private key for signing. Required if `--signed-fw` is set.
+
+Example:
+
+```
+ ./waf configure --board BOARDNAME --signed-fw --private-key NAME_private_key.dat
+```
+
+### Build-Time Flags (set during `./waf <target>`)
+
+- `--append-checksum` : Append a SHA-256 checksum to the .apj firmware after build (optional, but recommended for extra integrity).
+
+Example:
+
+```
+ ./waf copter --append-checksum
+```
+
+### Typical Secure Firmware Build Workflow
+
+1. Configure the build with signing enabled and your private key:
+   ```
+   ./waf configure --board BOARDNAME --signed-fw --private-key NAME_private_key.dat
+   ```
+2. Build the firmware, optionally appending a checksum:
+   ```
+   ./waf copter --append-checksum
+   ```
+   - The firmware will be automatically signed using your private key.
+   - If `--append-checksum` is provided, a checksum will be appended after signing.
+
+You do **not** need to repeat the signing or private key flags for every build. Once set at configuration time, they are saved for future builds. You only need to reconfigure if you want to change these options.
+
+#### Notes:
+- If you set `--signed-fw` but do not provide `--private-key`, the build will warn (or can be configured to fail) and will not sign the firmware.
+- If you want to build unsigned firmware, simply omit `--signed-fw` and `--private-key` during configuration.
+- You can use `--append-checksum` with or without signing.
+
+#### Manual Signing (Advanced/Legacy)
+If you prefer to sign manually, you can still use the script directly:
+
+```
+ ./Tools/scripts/signing/make_secure_fw.py build/BOARDNAME/bin/arducopter.apj NAME_private_key.dat
+```
+
+But the automated flow above is recommended for most users.
+
+
 ## Flashing the secure bootloader
 
 There are two methods of getting the secure bootloader onto the
