@@ -1,0 +1,61 @@
+# hw definition file for processing by chibios_pins.py
+# for ANTHENA-H743 PRO bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware identification
+APJ_BOARD_ID 1043
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# don't allow bootloader to use more than 32k
+FLASH_USE_MAX_KB 32
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+define HAL_CHIBIOS_ARCH_COREI7 1
+
+# use FREM for storage
+define HAL_STORAGE_SIZE 32768
+define HAL_WITH_RAMTRON 1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# USB setup
+USB_STRING_MANUFACTURER "Anthena Microsystems"
+
+# Add CS pins to ensure they are high in bootloader
+PF10 FRAM_CS CS
+PF6  SDCARD_CS CS
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# Safety Switch
+PE4 SAFETY_SW INPUT
+PE12 LED_SAFETY OUTPUT
+
+# Add CS pins to ensure they are high in bootloader
+PF10 FRAM_CS CS
+PF6  SDCARD_CS CS
+
+# use SERIAL_ORDER to specify USB as only connection
+SERIAL_ORDER OTG1
+
+# bootloader embedding
+define HAL_BOOTLOADER_BUILD TRUE
