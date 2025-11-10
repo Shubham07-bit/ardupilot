@@ -332,20 +332,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("WOW_PIN",     25, SIM,  wow_pin, -1),
 
-    // @Param: VIB_FREQ_X
-    // @DisplayName: Vibration frequency
-    // @Description: Frequency of vibration applied to IMU readings in SITL
-    // @Units: Hz
-
-    // @Param: VIB_FREQ_Y
-    // @DisplayName: Vibration frequency
-    // @Description: Frequency of vibration applied to IMU readings in SITL
-    // @Units: Hz
-
-    // @Param: VIB_FREQ_Z
-    // @DisplayName: Vibration frequency
-    // @Description: Frequency of vibration applied to IMU readings in SITL
-    // @Units: Hz
+    // vibration frequencies on each axis
     AP_GROUPINFO("VIB_FREQ",   26, SIM,  vibe_freq, 0),
 
     // @Group: PARA_
@@ -760,12 +747,6 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @Description: Scaling factor for simulated vibration from motors
     // @User: Advanced
     AP_GROUPINFO("MAG_RND",        1, SIM,  mag_noise,   0),
-    // @Param: MAG_MOT
-    // @DisplayName: Motor magnetic interference
-    // @Description: Simulates distortion of magnetometer readings caused by motor current
-    // @Units: mGauss/A
-    // @User: Advanced
-    // @Vector3Parameter: 1
     AP_GROUPINFO("MAG_MOT",        2, SIM,  mag_mot, 0),
     // @Param: MAG_DELAY
     // @DisplayName: Mag measurement delay
