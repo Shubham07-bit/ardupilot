@@ -48,6 +48,12 @@
 #include "AP_DDS_Service_Table.h"
 #include "AP_DDS_External_Odom.h"
 
+
+// scope for fs radio and parameter type
+using namespace Status;
+using namespace ParameterType;
+
+
 #define STRCPY(D,S) strncpy(D, S, ARRAY_SIZE(D))
 
 // Enable DDS at runtime by default

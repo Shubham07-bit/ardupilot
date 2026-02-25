@@ -28,6 +28,7 @@ setup(
             "plane_waypoint_follower = ardupilot_dds_tests.plane_waypoint_follower:main",
             "pre_arm_check = ardupilot_dds_tests.pre_arm_check_service:main",
             "copter_takeoff = ardupilot_dds_tests.copter_takeoff:main",
+            "copter_waypoint_follower = ardupilot_dds_tests.copter_waypoint_follower:main",
         ],
     },
 )
