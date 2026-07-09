@@ -20,6 +20,7 @@
 #include "AP_Mount_Topotek.h"
 #include "AP_Mount_CADDX.h"
 #include "AP_Mount_XFRobot.h"
+#include "AP_Mount_K40T.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -188,6 +189,15 @@ void AP_Mount::init()
             serial_instance++;
             break;
 #endif // HAL_MOUNT_XFROBOT_ENABLED
+
+#if HAL_MOUNT_K40T_ENABLED
+        // check for K40T gimbal
+        case Type::K40T:
+            _backends[instance] = NEW_NOTHROW AP_Mount_K40T(*this, _params[instance], instance, serial_instance);
+            _num_instances++;
+            serial_instance++;
+            break;
+#endif // HAL_MOUNT_K40T_ENABLED
         }
 
         // init new instance
