@@ -289,29 +289,30 @@ bool AP_Mission::continue_after_land_check_for_takeoff()
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
+    // restore saved exit position for resume after reboot (MUST be before waypoint restore)
+    bool have_saved_position = (_restart == 0 && _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE &&
+                                _resume_lat.get() != 0 && _resume_lng.get() != 0);
+
+    if (have_saved_position) {
+        // build virtual resume command from saved exit position
+        _resume_cmd.index = _last_cmd.get();
+        _resume_cmd.id = MAV_CMD_NAV_WAYPOINT;
+        _resume_cmd.content.location.lat = _resume_lat.get();
+        _resume_cmd.content.location.lng = _resume_lng.get();
+        _resume_cmd.content.location.alt = _resume_alt.get();
+        _resume_cmd.content.location.relative_alt = false;
+        _resume_cmd.content.location.terrain_alt = false;
+        _resume_cmd.p1 = 0;
+        _repeat_dist = _resume_repeat_dist.get(); // 0 = direct resume, >0 = rewind
+        _flags.resuming_mission = true;
+    }
+
     // restore last waypoint after reboot if resume is enabled and no current command is set
     if (_restart == 0 && _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
         uint16_t wp = _last_cmd.get();
         if (wp != 0 && wp <= num_commands()) {
             // set_current_cmd will set state to stopped so resume will pick it up
             set_current_cmd(wp);
-        }
-    }
-
-    // restore saved exit position for resume after reboot
-    if (_restart == 0 && _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
-        if (_resume_lat.get() != 0 && _resume_lng.get() != 0) {
-            // build virtual resume command from saved exit position
-            _resume_cmd.index = _last_cmd.get();
-            _resume_cmd.id = MAV_CMD_NAV_WAYPOINT;
-            _resume_cmd.content.location.lat = _resume_lat.get();
-            _resume_cmd.content.location.lng = _resume_lng.get();
-            _resume_cmd.content.location.alt = _resume_alt.get();
-            _resume_cmd.content.location.relative_alt = false;
-            _resume_cmd.content.location.terrain_alt = false;
-            _resume_cmd.p1 = 0;
-            _repeat_dist = _resume_repeat_dist.get(); // 0 = direct resume, >0 = rewind
-            _flags.resuming_mission = true;
         }
     }
 
