@@ -294,11 +294,10 @@ void AP_Mission::start_or_resume()
         }
     }
 
-    // restore rewind position for resume after reboot
+    // restore saved exit position for resume after reboot
     if (_restart == 0 && _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
-        if (_resume_repeat_dist.get() > 0 &&
-            _resume_lat.get() != 0 && _resume_lng.get() != 0) {
-            // build virtual resume command from saved position
+        if (_resume_lat.get() != 0 && _resume_lng.get() != 0) {
+            // build virtual resume command from saved exit position
             _resume_cmd.index = _last_cmd.get();
             _resume_cmd.id = MAV_CMD_NAV_WAYPOINT;
             _resume_cmd.content.location.lat = _resume_lat.get();
@@ -307,7 +306,7 @@ void AP_Mission::start_or_resume()
             _resume_cmd.content.location.relative_alt = false;
             _resume_cmd.content.location.terrain_alt = false;
             _resume_cmd.p1 = 0;
-            _repeat_dist = _resume_repeat_dist.get();
+            _repeat_dist = _resume_repeat_dist.get(); // 0 = direct resume, >0 = rewind
             _flags.resuming_mission = true;
         }
     }
@@ -3241,14 +3240,12 @@ void AP_Mission::update_exit_position(void)
 // save rewind position for resume after reboot
 void AP_Mission::save_rewind_position(void)
 {
-    if (_repeat_dist > 0 && _wp_index_history[LAST_WP_PASSED] != AP_MISSION_CMD_INDEX_NONE) {
-        Mission_Command rewind_cmd;
-        if (calc_rewind_pos(rewind_cmd)) {
-            _resume_repeat_dist.set_and_save(_repeat_dist);
-            _resume_lat.set_and_save(rewind_cmd.content.location.lat);
-            _resume_lng.set_and_save(rewind_cmd.content.location.lng);
-            _resume_alt.set_and_save(rewind_cmd.content.location.alt);
-        }
+    // save actual exit position for resume after reboot
+    if (_exit_position.lat != 0 || _exit_position.lng != 0) {
+        _resume_repeat_dist.set_and_save(0); // no rewind, direct resume
+        _resume_lat.set_and_save(_exit_position.lat);
+        _resume_lng.set_and_save(_exit_position.lng);
+        _resume_alt.set_and_save(_exit_position.alt);
     }
 }
 
