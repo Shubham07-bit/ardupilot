@@ -160,6 +160,7 @@ void AP_Mission::stop()
     // save rewind position for resume after reboot
     save_rewind_position();
     _flags.state = MISSION_STOPPED;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission stop saved resume pos");
 }
 
 /// resume - continues the mission execution from where we last left off
@@ -3249,6 +3250,7 @@ void AP_Mission::save_rewind_position(void)
         _resume_lat.set_and_save(_exit_position.lat);
         _resume_lng.set_and_save(_exit_position.lng);
         _resume_alt.set_and_save(_exit_position.alt);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Saved resume pos");
     }
 }
 
