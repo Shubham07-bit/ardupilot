@@ -37,6 +37,13 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RESTART",  1, AP_Mission, _restart, AP_MISSION_RESTART_DEFAULT),
 
+    // @Param: LASTCMD
+    // @DisplayName: Last mission command
+    // @Description: Last mission command executed. Used to resume mission after reboot.
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO("LASTCMD", 3, AP_Mission, _last_cmd, 0),
+
     // @Param: OPTIONS
     // @DisplayName: Mission options bitmask
     // @Description: Bitmask of what options to use in missions. If the DontZeroCounter counter option is set than on completion of a jump loop the counter is left at zero, so the jump will not happen again if the loop is re-entered.
@@ -248,6 +255,15 @@ bool AP_Mission::continue_after_land_check_for_takeoff()
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
+    // restore last waypoint after reboot if resume is enabled and no current command is set
+    if (_restart == 0 && _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        uint16_t wp = _last_cmd.get();
+        if (wp != 0 && wp <= num_commands()) {
+            // set_current_cmd will set state to stopped so resume will pick it up
+            set_current_cmd(wp);
+        }
+    }
+
     if (_restart == 1 && !_force_resume) {
         start();
     } else {
@@ -291,6 +307,7 @@ bool AP_Mission::clear()
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
     _flags.state = MISSION_STOPPED;
+    _last_cmd.set_and_save(0);
     // return success
     return true;
 }
@@ -726,6 +743,11 @@ bool AP_Mission::restart_current_nav_cmd()
 // returns false on any issue at all.
 bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet)
 {
+    // clear last command on new mission upload
+    if (index == 1) {
+        _last_cmd.set_and_save(0);
+    }
+
     // this is the on-storage format
     AP_Mission::Mission_Command cmd {};
 
@@ -2146,6 +2168,9 @@ void AP_Mission::complete()
     _flags.in_landing_sequence = false;
     _flags.in_return_path = false;
 
+    // clear last command so it doesn't resume after reboot
+    _last_cmd.set_and_save(0);
+
     // callback to main program's mission complete function
     _mission_complete_fn();
 }
@@ -2203,6 +2228,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             }
             // set current navigation command and start it
             _nav_cmd = cmd;
+            _last_cmd.set_and_save(_nav_cmd.index);
             if (start_command(_nav_cmd)) {
                 _flags.nav_cmd_loaded = true;
                 if (_jump_tag.age > 0 && _jump_tag.age < UINT16_MAX) {

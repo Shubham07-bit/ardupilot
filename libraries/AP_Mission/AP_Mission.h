@@ -934,6 +934,7 @@ private:
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_UInt16               _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
+    AP_Int16                _last_cmd;  // last command index for resume after reboot
 
     // internal variables
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
