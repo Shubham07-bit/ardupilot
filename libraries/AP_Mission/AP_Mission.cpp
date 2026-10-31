@@ -192,16 +192,19 @@ void AP_Mission::resume()
         return;
     }
 
-    // rewind the mission wp if the repeat distance has been set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
-    if (_repeat_dist > 0 && _wp_index_history[LAST_WP_PASSED] != AP_MISSION_CMD_INDEX_NONE) {
-        // if not already in a resume state calculate the position to rewind to
-        Mission_Command tmp_cmd;
-        if (!_flags.resuming_mission && calc_rewind_pos(tmp_cmd)) {
-            _resume_cmd = tmp_cmd;
+    // resume mission to saved position (either rewind or direct exit position)
+    if ((_repeat_dist > 0 || _flags.resuming_mission) &&
+        _resume_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
+        // if not already in a resume state and we have repeat_dist, calculate rewind position
+        if (!_flags.resuming_mission && _repeat_dist > 0) {
+            Mission_Command tmp_cmd;
+            if (calc_rewind_pos(tmp_cmd)) {
+                _resume_cmd = tmp_cmd;
+            }
         }
 
-        // resume mission to rewound position
-        if (_resume_cmd.index != AP_MISSION_CMD_INDEX_NONE && start_command(_resume_cmd)) {
+        // resume mission to saved/resumed position
+        if (start_command(_resume_cmd)) {
             _nav_cmd = _resume_cmd;
             _flags.nav_cmd_loaded = true;
             // set flag to prevent history being re-written
