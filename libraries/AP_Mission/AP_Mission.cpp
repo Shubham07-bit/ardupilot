@@ -44,6 +44,34 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @ReadOnly: True
     AP_GROUPINFO("LASTCMD", 3, AP_Mission, _last_cmd, 0),
 
+    // @Param: RESUME_DIST
+    // @DisplayName: Resume repeat distance
+    // @Description: Distance to repeat on mission resume after reboot (metres). Set by DO_SET_RESUME_REPEAT_DIST.
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO("RESUME_DIST", 4, AP_Mission, _resume_repeat_dist, 0),
+
+    // @Param: RESUME_LAT
+    // @DisplayName: Resume latitude
+    // @Description: Latitude of resume position after reboot (*1e7 deg).
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO("RESUME_LAT", 5, AP_Mission, _resume_lat, 0),
+
+    // @Param: RESUME_LNG
+    // @DisplayName: Resume longitude
+    // @Description: Longitude of resume position after reboot (*1e7 deg).
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO("RESUME_LNG", 6, AP_Mission, _resume_lng, 0),
+
+    // @Param: RESUME_ALT
+    // @DisplayName: Resume altitude
+    // @Description: Altitude of resume position after reboot (cm).
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO("RESUME_ALT", 7, AP_Mission, _resume_alt, 0),
+
     // @Param: OPTIONS
     // @DisplayName: Mission options bitmask
     // @Description: Bitmask of what options to use in missions. If the DontZeroCounter counter option is set than on completion of a jump loop the counter is left at zero, so the jump will not happen again if the loop is re-entered.
@@ -129,6 +157,8 @@ void AP_Mission::start()
 /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
 void AP_Mission::stop()
 {
+    // save rewind position for resume after reboot
+    save_rewind_position();
     _flags.state = MISSION_STOPPED;
 }
 
@@ -264,6 +294,24 @@ void AP_Mission::start_or_resume()
         }
     }
 
+    // restore rewind position for resume after reboot
+    if (_restart == 0 && _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        if (_resume_repeat_dist.get() > 0 &&
+            _resume_lat.get() != 0 && _resume_lng.get() != 0) {
+            // build virtual resume command from saved position
+            _resume_cmd.index = _last_cmd.get();
+            _resume_cmd.id = MAV_CMD_NAV_WAYPOINT;
+            _resume_cmd.content.location.lat = _resume_lat.get();
+            _resume_cmd.content.location.lng = _resume_lng.get();
+            _resume_cmd.content.location.alt = _resume_alt.get();
+            _resume_cmd.content.location.relative_alt = false;
+            _resume_cmd.content.location.terrain_alt = false;
+            _resume_cmd.p1 = 0;
+            _repeat_dist = _resume_repeat_dist.get();
+            _flags.resuming_mission = true;
+        }
+    }
+
     if (_restart == 1 && !_force_resume) {
         start();
     } else {
@@ -308,6 +356,10 @@ bool AP_Mission::clear()
     _flags.do_cmd_loaded = false;
     _flags.state = MISSION_STOPPED;
     _last_cmd.set_and_save(0);
+    _resume_repeat_dist.set_and_save(0);
+    _resume_lat.set_and_save(0);
+    _resume_lng.set_and_save(0);
+    _resume_alt.set_and_save(0);
     // return success
     return true;
 }
@@ -746,6 +798,10 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
     // clear last command on new mission upload
     if (index == 1) {
         _last_cmd.set_and_save(0);
+        _resume_repeat_dist.set_and_save(0);
+        _resume_lat.set_and_save(0);
+        _resume_lng.set_and_save(0);
+        _resume_alt.set_and_save(0);
     }
 
     // this is the on-storage format
@@ -2170,6 +2226,10 @@ void AP_Mission::complete()
 
     // clear last command so it doesn't resume after reboot
     _last_cmd.set_and_save(0);
+    _resume_repeat_dist.set_and_save(0);
+    _resume_lat.set_and_save(0);
+    _resume_lng.set_and_save(0);
+    _resume_alt.set_and_save(0);
 
     // callback to main program's mission complete function
     _mission_complete_fn();
@@ -3175,6 +3235,20 @@ void AP_Mission::update_exit_position(void)
     if (!AP::ahrs().get_location(_exit_position)) {
         _exit_position.lat = 0;
         _exit_position.lng = 0;
+    }
+}
+
+// save rewind position for resume after reboot
+void AP_Mission::save_rewind_position(void)
+{
+    if (_repeat_dist > 0 && _wp_index_history[LAST_WP_PASSED] != AP_MISSION_CMD_INDEX_NONE) {
+        Mission_Command rewind_cmd;
+        if (calc_rewind_pos(rewind_cmd)) {
+            _resume_repeat_dist.set_and_save(_repeat_dist);
+            _resume_lat.set_and_save(rewind_cmd.content.location.lat);
+            _resume_lng.set_and_save(rewind_cmd.content.location.lng);
+            _resume_alt.set_and_save(rewind_cmd.content.location.alt);
+        }
     }
 }
 

@@ -917,6 +917,9 @@ private:
     // update progress made in mission to store last position in the event of mission exit
     void update_exit_position(void);
 
+    // save rewind position for resume after reboot
+    void save_rewind_position(void);
+
     void on_mission_timestamp_change();
 
     /// sanity checks that the masked fields are not NaN's or infinite
@@ -935,6 +938,10 @@ private:
     AP_UInt16               _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
     AP_Int16                _last_cmd;  // last command index for resume after reboot
+    AP_Int16                _resume_repeat_dist; // repeat distance for resume after reboot (m)
+    AP_Int32                _resume_lat;  // resume latitude * 1e7
+    AP_Int32                _resume_lng;  // resume longitude * 1e7
+    AP_Int32                _resume_alt;  // resume altitude * 100 (cm)
 
     // internal variables
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
